@@ -1,0 +1,86 @@
+---
+title: |
+  \begin{center}
+  {\Large \textbf{ALMA MATER STUDIORUM – UNIVERSITA’ DI BOLOGNA}}\\[1.5cm]
+  {\large DIPARTIMENTO DI SCIENZE STATISTICHE}\\
+  {\large “PAOLO FORTUNATI”}\\[2cm]
+  {\large Corso di Laurea in Scienze Statistiche}\\[2cm]
+  \end{center}
+  \vfill
+  \begin{center}
+  {\Huge \textbf{TITOLO}}\\[0.5cm]
+  {\Large (Utilizzo Statistico di Banche Dati Economiche)}
+  \end{center}
+  \vfill
+author: ""
+date: ""
+format: 
+  pdf:
+    number-sections: true  # Enables section numbering
+bibliography: biblio.bib  # Link the BibTeX file
+header-includes: |
+  % Set Arial font globally
+  \usepackage{helvet}  
+  \renewcommand{\familydefault}{\sfdefault}  
+
+  % Ensure correct document structure
+  \usepackage{titling}
+  \usepackage{array}
+  \usepackage{ragged2e}
+
+  % Define Presentata and Appello sections
+  \newcommand{\presentata}{%
+    \begin{flushleft}
+    \begin{tabular}{ p{7cm} p{7cm} }
+    \textbf{Presentata da:} & \hfill \textbf{Relatore:} \\
+    Nome e Cognome & \hfill Prof … … \\
+    Matricola: … … &  \\
+    \end{tabular}
+    \end{flushleft}
+  }
+  \newcommand{\appello}{%
+    \vfill
+    \begin{center}
+    \textbf{APPELLO … …}\\[0.5cm]
+    \textbf{ANNO ACCADEMICO … / …}
+    \end{center}
+  }
+---
+
+\presentata
+
+\appello
+
+\newpage  
+
+\fontsize{12pt}{14pt} \selectfont  
+
+***The PDF document should be no longer than 5 pages excluding the title page and references.***
+
+# Introduction (1 paragraph)
+
+This section explains the question addressed by the thesis and its motivation in the context of the relevant literature.
+
+# Data (1 paragraph, 1 table)
+
+This section provides information on the data source, the data contents and structure, and the key variables used for the analysis. The data should also be illustrated by inserting a table summarizing the data.
+
+# Methodology (2 paragraphs, 1 equation)
+
+This section illustrates the main statistical or econometric model used to answer the question outlined in the introduction. The model should be explained in words and with an equation. Other tests and models present in the quarto file can be mentioned here.
+
+# Results (4 paragraphs, 2 Tables, 2 Figures)
+
+This section discusses results with the support of tables and figures. Each table or figure should provide different information. This section can also describe and discuss other relevant analyses done in the quarto file and not present in Tables and Figures.
+
+# Conclusions (1 paragraph)
+
+This section summarizes the question and results obtained in the study.
+
+
+# References
+
+This section lists the bibliography
+
+
+
