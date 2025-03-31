@@ -8,7 +8,7 @@ title: |
   \end{center}
   \vfill
   \begin{center}
-  {\Huge \textbf{Istruzione, Disoccupazione e Reddito: Una Valutazione Empirica del Loro Effetto sulla Criminalità}}\\[0.5cm]
+  {\Huge \textbf{Istruzione, Disoccupazione e Reddito: i loro effetti sulla Criminalità}}\\[0.5cm]
   {\Large (Utilizzo Statistico di Banche Dati Economiche)}
   \end{center}
   \vfill
@@ -34,15 +34,15 @@ header-includes: |
     \begin{tabular}{ p{7cm} p{7cm} }
     \textbf{Presentata da:} & \hfill \textbf{Relatore:} \\
     Andrea Marcuzzi & \hfill Prof Paolo Verme \\
-    Matricola: 000098... &  \\
+    Matricola: 0000998287 &  \\
     \end{tabular}
     \end{flushleft}
   }
   \newcommand{\appello}{%
     \vfill
     \begin{center}
-    \textbf{APPELLO //}\\[0.5cm]
-    \textbf{ANNO ACCADEMICO 24 / 25}
+    \textbf{APPELLO 06/04/2025}\\[0.5cm]
+    \textbf{ANNO ACCADEMICO 24/25}
     \end{center}
   }
 execute:
@@ -61,7 +61,7 @@ execute:
 
 # Introduzione
 
-La criminalità è un fenomeno complesso che riflette le tensioni sociali ed economiche di una nazione e rappresenta un oggetto di studio centrale per le scienze statistiche e sociali. Numerosi studi evidenziano l’esistenza di possibili legami tra i tassi di criminalità e alcune variabili socioeconomiche, tra cui il livello di istruzione, la disoccupazione e il reddito disponibile \cite{becker1968crime, ehrlich1973participation}. In questo elaborato si analizza la relazione tra criminalità e questi fattori in Italia nel periodo 2010–2020, utilizzando dati ufficiali ISTAT. L’obiettivo è verificare se e in che misura questi elementi siano statisticamente associati all’andamento della criminalità, impiegando modelli lineari e strumenti di analisi descrittiva ed econometrica in ambiente RStudio, con il supporto di Quarto, ggplot2 e rsdmx per l’estrazione e la visualizzazione dei dati.
+La criminalità è un fenomeno complesso che riflette le tensioni sociali ed economiche di una nazione e rappresenta un oggetto di studio centrale per le scienze statistiche e sociali. Numerosi studi evidenziano l’esistenza di possibili legami tra i tassi di criminalità e alcune variabili socioeconomiche, tra cui il livello di istruzione, la disoccupazione e il reddito disponibile @becker1968crime; @ehrlich1973participation. In questo elaborato si analizza la relazione tra criminalità e questi fattori in Italia nel periodo 2010–2020, utilizzando dati ufficiali ISTAT. L’obiettivo è verificare se e in che misura questi elementi siano statisticamente associati all’andamento della criminalità, impiegando modelli lineari e strumenti di analisi descrittiva ed econometrica in ambiente RStudio, con il supporto di Quarto, ggplot2 e rsdmx per l’estrazione e la visualizzazione dei dati.
 
 ```{r, out.width="60%"}
 setwd("/Users/andreamarcuzzi/Desktop/AndreaMarcuzzidirectory/")
@@ -93,13 +93,19 @@ invisible(lapply(packages, library, character.only = TRUE))
 ```
 
 ```{r}
-#carica tutti i file per il render
-crimes <- read.csv("crimes.csv", stringsAsFactors = FALSE)
+# Leggi i dataset già puliti
 crimes_cleaned1020 <- read.csv("crimes_cleaned1020.csv", stringsAsFactors = FALSE)
 crimes_cleaned1017 <- read.csv("crimes_cleaned1017.csv", stringsAsFactors = FALSE)
-education_level <- read.csv("education_level.csv", stringsAsFactors = FALSE)
+education_cleaned <- read.csv("education_cleaned.csv", stringsAsFactors = FALSE)
+unemployment_cleaned <- read.csv("unemployment_cleaned.csv", stringsAsFactors = FALSE)
 income_cleaned <- read.csv("income_cleaned.csv", stringsAsFactors = FALSE)
 merged_data <- read.csv("merged_data.csv", stringsAsFactors = FALSE)
+
+#dataset senza pulizia
+crimes <- read.csv("crimes.csv", stringsAsFactors = FALSE)
+education_level <- read.csv("education_level.csv", stringsAsFactors = FALSE)
+income <- read.csv("income.csv", stringsAsFactors = FALSE)
+unemployment <- read.csv("unemployment.csv", stringsAsFactors = FALSE)
 
 ```
 
@@ -132,9 +138,11 @@ istat.fl %>% filter(str_detect(Name.en, "Unemployment"))
 istat.fl %>% filter(str_detect(Name.it, "Reddito disponibile"))
 ```
 
-# Data
+# Dati
 
-L’analisi si basa su dati ufficiali forniti dall’Istituto Nazionale di Statistica (ISTAT), estratti tramite API SDMX e integrati in ambiente R. I dataset considerati coprono il periodo 2010–2023 e includono variabili annuali riferite alla criminalità (numero di detenuti per tipo di reato), al livello di istruzione della popolazione (età 15–64), al tasso di disoccupazione e al reddito disponibile delle famiglie. I dati sono stati armonizzati sull’anno di osservazione (`obsTime`) e sulle variabili quantitative (`obsValue`). Per ciascun dataset è stata eseguita una pulizia preliminare: rimozione dei valori mancanti, aggregazione annuale e selezione delle fasce demografiche rilevanti. La tabella seguente mostra un estratto dei dati utilizzati.
+L’analisi si basa su dati ufficiali forniti dall’Istituto Nazionale di Statistica (ISTAT), estratti tramite API SDMX e integrati in ambiente R. I dataset considerati coprono il periodo 2010–2020 e includono variabili annuali riferite alla criminalità (numero di detenuti per tipo di reato), al livello di istruzione della popolazione (età 15–64), al tasso di disoccupazione e al reddito disponibile delle famiglie. I dati sono stati armonizzati sull’anno di osservazione (`obsTime`) e sulle variabili quantitative (`obsValue`). Per ciascun dataset è stata eseguita una pulizia preliminare: rimozione dei valori mancanti, aggregazione annuale e selezione delle fasce demografiche rilevanti. La tabella seguente mostra un estratto dei dati utilizzati.
+
+
 
 ```{r, include=FALSE}
 #scarica il dataset su cui vogliamo lavorare --> 'crimes'
@@ -382,59 +390,168 @@ head(income_cleaned)
 write.csv(income_cleaned, "income_cleaned.csv", row.names = FALSE)
 ```
 
-```{r, echo=FALSE}
+```{r tabella-dataset, echo=FALSE, results='asis'}
+library(kableExtra)
 library(dplyr)
-library(knitr)
 
+# Tabella estesa dei dataset
 data_summary_ext <- tibble::tibble(
   Variabile = c("Criminalità", "Istruzione", "Disoccupazione", "Reddito disponibile"),
   Anni = c("2010–2023", "2010–2020", "2010–2020", "2010–2017"),
-  `N. Osservazioni` = c(nrow(crimes_cleaned1020), 
-                        nrow(education_cleaned),
-                        nrow(unemployment_cleaned),
-                        nrow(income_cleaned)),
+  Osservazioni = c(nrow(crimes_cleaned1020), 
+                   nrow(education_cleaned),
+                   nrow(unemployment_cleaned),
+                   nrow(income_cleaned)),
   Fonte = rep("ISTAT", 4),
-  `Unità di misura` = c("Numero di detenuti", "Numero di persone", "Percentuale (%)", "Euro (€)"),
-  `Livello territoriale` = rep("Nazionale", 4),
-  `Frequenza originale` = c("Annuale", "Annuale", "Trimestrale", "Annuale"),
-  `Metodo aggregazione` = c("Somma per anno", "Somma fascia 15–64", "Media annuale", "Somma annuale"),
-  `Codice ISTAT` = c("73_173_DF_DCCV_DETENUTI_1", 
-                     "150_1190_DF_DCCV_FORZLV1_UNT2020_1", 
-                     "151_914", 
-                     "737_1093"),
-  `Fascia età` = c("Tutte", "15–64", "15–64", "Tutte"),
-  Note = c("Incl. sesso/cittadinanza", "Solo residenti", "Media trimestri", "Prezzi correnti")
+  Unità = c("N. detenuti", "N. persone", "%", "€"),
+  Frequenza = c("Annuale", "Annuale", "Trimestrale", "Annuale"),
+  Aggregazione = c("Somma annuale", "Somma fascia 15–64", "Media annuale", "Somma regionale"),
+  Codice = c("73_173_DF_DCCV_DETENUTI_1", 
+             "150_1190_DF_DCCV_FORZLV1_UNT2020_1", 
+             "151_914", 
+             "737_1093")
 )
 
-kable(data_summary_ext, caption = "Tabella 1 – Sintesi estesa dei dataset utilizzati")
+# Stampa tabella migliorata
+kable(data_summary_ext,
+      format = "latex",
+      booktabs = TRUE,
+      caption = " Sintesi dei dataset utilizzati nell'analisi",
+      align = "lcccccccccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),
+                font_size = 9, position = "center") %>%
+  column_spec(1, bold = TRUE)
 
 ```
 
-# Results
+# Metodologia
 
-Il primo elemento analizzato è l’evoluzione del numero totale di crimini registrati in Italia tra il 2010 e il 2023. Come illustrato nella Figura 1, si osserva una tendenza complessivamente decrescente fino al 2015, seguita da una fase di relativa stabilità. Questa dinamica potrebbe riflettere sia l’effetto di politiche di prevenzione e repressione, sia cambiamenti socio-demografici e nei meccanismi di registrazione statistica. Il trend decrescente dei reati appare coerente con quanto osservato anche in altre fonti ufficiali e studi europei.
+L’analisi si basa su un approccio statistico descrittivo e inferenziale. Dopo aver armonizzato i dati provenienti da ISTAT per il periodo 2010–2020, sono state condotte analisi esplorative per ciascuna variabile (criminalità, istruzione, disoccupazione, reddito) tramite grafici temporali e misure di sintesi. Successivamente, si è proceduto alla valutazione delle correlazioni lineari tra la criminalità e ciascun indicatore socioeconomico, al fine di individuare relazioni potenzialmente significative.
+Per quantificare tali relazioni, è stato stimato un modello di regressione lineare semplice per ogni variabile indipendente. Il modello ha come variabile dipendente il numero totale di crimini (`Criminalità`) e come variabile esplicativa una delle grandezze socioeconomiche considerate. Il modello assume la seguente forma generale:
+La forma stimata è: 
+$$
+\text{Criminalità}_t = \beta_0 + \beta_1 X_t + \varepsilon_t
+$$
 
-```{r fig-criminalita, echo=FALSE}
+dove ( X_t ) rappresenta, a seconda dei casi, il livello di istruzione, il tasso di disoccupazione o il reddito disponibile nell’anno ( t ). I coefficienti sono stimati tramite minimi quadrati ordinari (OLS), e l’analisi si basa su RStudio, con l’utilizzo dei pacchetti `ggplot2`, `dplyr`, `broom` e `rsdmx`.
+
+
+
+```{r corr-crime-edu, include=FALSE}
+#correlazione crimes e education level(15-64) 2010-2020
+
+
+merged_data <- merge(crimes_cleaned1020, education_cleaned, by = "obsTime")
+
+#salva il file.csv
+write.csv(merged_data, "merged_data.csv", row.names = FALSE)
+
+
+cor_crime_edu <- cor(merged_data$obsValue.x, merged_data$obsValue.y, use = "complete.obs")
+
+# Stampare il risultato
+print(paste("Correlation between Crime and Education:", round(cor_crime_edu, 3)))
+```
+
+```{r regressione-crimes-edu, include=FALSE}
+# Creare il modello di regressione
+modello_regressione <- lm(obsValue.x ~ obsValue.y, data = merged_data)
+
+# Mostrare il riepilogo del modello
+summary(modello_regressione)
+
+```
+
+```{r corr-crimes-unemployment, include=FALSE}
+# Calcolare la correlazione tra il tasso di disoccupazione e la criminalità
+cor_crime_unemployment <- cor(crimes_cleaned1020$obsValue, 
+                              unemployment_cleaned$obsValue, 
+                              use = "complete.obs")
+
+# Stampare il risultato
+print(paste("Correlation between Crime and Unemployment:", round(cor_crime_unemployment, 3)))
+
+```
+
+```{r regressione-crimes-unemployment, include=FALSE}
+# Creare il modello di regressione tra crimes e unemployment
+reg_model_unemployment <- lm(crimes_cleaned1020$obsValue ~ unemployment_cleaned$obsValue)
+
+# Mostrare il riepilogo del modello
+summary(reg_model_unemployment)
+```
+
+```{r correlazione-crimes-income, include=FALSE}
+# Calcolare la correlazione con i dati filtrati
+cor_crime_income <- cor(crimes_cleaned1017$obsValue, 
+                        income_cleaned$obsValue, 
+                        use = "complete.obs")
+
+# Stampare il risultato
+print(paste("Correlation between Crime and Income:", round(cor_crime_income, 3)))
+
+```
+
+```{r regressione-crimes-income, include=FALSE}
+# Creare il modello di regressione
+reg_model_income <- lm(crimes_cleaned1017$obsValue ~ income_cleaned$obsValue)
+
+# Mostrare il riepilogo del modello
+summary(reg_model_income)
+
+```
+
+
+
+# Risultati
+
+## Risultati: Evoluzione della Criminalità
+
+```{r fig-tab-criminalita, echo=FALSE, results='asis', fig.cap=" Andamento della criminalità in Italia (2010–2023)"}
+library(dplyr)
 library(ggplot2)
+library(knitr)
+library(kableExtra)
 
-ggplot(crimes_cleaned1020, aes(x = obsTime, y = obsValue)) +
+# Crea tabella riepilogativa
+crimes_summary <- crimes %>%
+  group_by(obsTime) %>%
+  summarise(`Totale Crimini` = sum(obsValue, na.rm = TRUE))
+
+# Plot
+p <- ggplot(crimes_summary, aes(x = obsTime, y = `Totale Crimini`)) +
   geom_line(color = "steelblue", size = 1.2) +
-  geom_point(color = "black") +
-  labs(title = "Andamento della Criminalità in Italia (2010–2023)",
-       x = "Anno",
-       y = "Numero Totale di Crimini") +
-  theme_minimal()
+  geom_point(color = "red", size = 2) +
+  theme_minimal() +
+  labs(x = "Anno", y = "Totale Crimini")
 
+print(p)
+```
+Il primo elemento analizzato è l’evoluzione del numero totale di crimini registrati in Italia tra il 2010 e il 2020. Come illustrato nella Figure 1, si osserva una tendenza complessivamente decrescente fino al 2015, seguita da una fase di relativa stabilità. Questa dinamica potrebbe riflettere sia l’effetto di politiche di prevenzione e repressione, sia cambiamenti socio-demografici e nei meccanismi di registrazione statistica. Il trend decrescente dei reati appare coerente con quanto osservato anche in altre fonti ufficiali @istat2020crimini e studi internazionali sul fenomeno @tonry2007explanations.
+
+La Table 2  riporta il numero totale di crimini registrati annualmente in Italia nel periodo compreso tra il 2010 e il 2023, aggregato a partire dai dati ISTAT.Si osserva un trend inizialmente decrescente, in particolare tra il 2010 e il 2015, con una riduzione graduale dei reati registrati. A partire dal 2016, il numero di crimini mostra una fase di stabilizzazione, con lievi fluttuazioni negli anni successivi.
+Questa dinamica è coerente con quanto rappresentato nel grafico della Figura 1, e potrebbe riflettere l’effetto combinato di interventi normativi, politiche di prevenzione, miglioramento delle condizioni socioeconomiche e cambiamenti nei criteri di rilevazione statistica adottati dall’ISTAT nel tempo.L’analisi di questo andamento temporale costituisce la base per l’indagine sulla relazione con i principali fattori esplicativi socioeconomici discussi nelle sezioni successive.
+```{r tab-criminalita, echo=FALSE}
+library(dplyr)
+
+crimes_summary <- crimes %>%
+  group_by(obsTime) %>%
+  summarise(`Totale Crimini` = sum(obsValue, na.rm = TRUE))
+
+knitr::kable(
+  crimes_summary,
+  caption = "Totale dei crimini registrati per anno (2010–2023)",
+  format = "latex", booktabs = TRUE
+)
 ```
 
-La Tabella 2 presenta i risultati dei modelli di regressione lineare semplice stimati per valutare l’associazione tra criminalità e ciascuna variabile socioeconomica. I coefficienti stimati mostrano una relazione negativa tra criminalità e sia il livello di istruzione che il tasso di disoccupazione, mentre il reddito disponibile mostra un effetto positivo. Tuttavia, nessuno dei coefficienti risulta statisticamente significativo al livello convenzionale del 5%, sebbene il modello con la disoccupazione sia vicino alla soglia di significatività (p = 0.087). I valori del coefficiente di determinazione (R²) indicano che solo la disoccupazione spiega una quota apprezzabile della variabilità nella criminalità (29%), mentre gli altri modelli hanno R² inferiori al 20%. Le correlazioni confermano questi risultati: la relazione tra criminalità e istruzione è moderatamente negativa (r = –0.326), quella con il reddito è positiva (r = +0.425), mentre la disoccupazione mostra una correlazione molto debole (r = +0.102). Questi risultati suggeriscono che nessuna delle variabili analizzate, isolatamente, è in grado di spiegare in modo soddisfacente l’andamento della criminalità in Italia nel periodo considerato.
-
-```{r tabella-regressione-correlation, echo=FALSE}
+```{r tabella-regressione-correlation, echo=FALSE, results='asis'}
 library(broom)
 library(dplyr)
 library(knitr)
+library(kableExtra)
 
-# Calcolo correlazioni (usa i tuoi oggetti reali)
+# Calcolo correlazioni
 cor_istruzione <- cor(merged_data$obsValue.x, merged_data$obsValue.y, use = "complete.obs")
 cor_disoccupazione <- cor(crimes_cleaned1020$obsValue, unemployment_cleaned$obsValue, use = "complete.obs")
 cor_reddito <- cor(crimes_cleaned1017$obsValue, income_cleaned$obsValue, use = "complete.obs")
@@ -449,7 +566,7 @@ model_list <- list(
 # Lista correlazioni
 cor_list <- c(cor_istruzione, cor_disoccupazione, cor_reddito)
 
-# Tabella combinata
+# Costruzione tabella
 tabella <- lapply(seq_along(model_list), function(i) {
   nome <- names(model_list)[i]
   modello <- model_list[[i]]
@@ -466,13 +583,21 @@ tabella <- lapply(seq_along(model_list), function(i) {
   )
 }) %>% bind_rows()
 
-# Mostra la tabella
-kable(tabella, caption = "Tabella 2 – Regressione e correlazione tra criminalità e variabili socioeconomiche")
+# Stampa tabella elegante
+kable(tabella, format = "latex", booktabs = TRUE,
+      caption = " Regressione e correlazione tra criminalità e variabili socioeconomiche",
+      align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down"),
+                font_size = 9, position = "center") %>%
+  column_spec(1, bold = TRUE) %>%
+  add_header_above(c(" " = 1, "Regressione Lineare" = 3, "Correlazione" = 1))
 
 ```
 
-La Figura 2 mostra la relazione tra criminalità e ciascuna delle variabili socioeconomiche considerate: istruzione, disoccupazione e reddito disponibile. In tutti e tre i pannelli si osservano rette di regressione lineare accompagnate da ampi intervalli di confidenza. La relazione con l’istruzione appare leggermente negativa, coerente con l’ipotesi che un maggiore livello di istruzione sia associato a una riduzione dei comportamenti devianti. Per la disoccupazione, il legame è visivamente più debole, con una nube di punti molto dispersa e una retta quasi piatta. Al contrario, nel caso del reddito disponibile, si osserva una tendenza positiva, apparentemente in contrasto con l’intuizione economica. In tutti i casi, la debolezza delle pendenze e la dispersione dei dati suggeriscono che la relazione tra criminalità e singoli indicatori socioeconomici è limitata e probabilmente influenzata da fattori latenti o non osservati.
+La Table 3 presenta i risultati dei modelli di regressione lineare semplice stimati per valutare l’associazione tra criminalità e ciascuna variabile socioeconomica. I coefficienti stimati mostrano una relazione negativa tra criminalità e sia il livello di istruzione che il tasso di disoccupazione, mentre il reddito disponibile mostra un effetto positivo. Tuttavia, nessuno dei coefficienti risulta statisticamente significativo al livello convenzionale del 5%, sebbene il modello con la disoccupazione sia vicino alla soglia di significatività (p = 0.087). I valori del coefficiente di determinazione (R²) indicano che solo la disoccupazione spiega una quota apprezzabile della variabilità nella criminalità (29%), mentre gli altri modelli hanno R² inferiori al 20%. Le correlazioni confermano questi risultati: la relazione tra criminalità e istruzione è moderatamente negativa (r = –0.326), quella con il reddito è positiva (r = +0.425), mentre la disoccupazione mostra una correlazione molto debole (r = +0.102). Questi risultati suggeriscono che nessuna delle variabili analizzate, isolatamente, è in grado di spiegare in modo soddisfacente l’andamento della criminalità in Italia nel periodo considerato.
 
+
+La Figura 2 mostra la relazione tra criminalità e ciascuna delle variabili socioeconomiche considerate: istruzione, disoccupazione e reddito disponibile. In tutti e tre i pannelli si osservano rette di regressione lineare accompagnate da ampi intervalli di confidenza. La relazione con l’istruzione appare leggermente negativa, coerente con l’ipotesi che un maggiore livello di istruzione sia associato a una riduzione dei comportamenti devianti. Per la disoccupazione, il legame è visivamente più debole, con una nube di punti molto dispersa e una retta quasi piatta. Al contrario, nel caso del reddito disponibile, si osserva una tendenza positiva, apparentemente in contrasto con l’intuizione economica. In tutti i casi, la debolezza delle pendenze e la dispersione dei dati suggeriscono che la relazione tra criminalità e singoli indicatori socioeconomici è limitata e probabilmente influenzata da fattori latenti o non osservati.
 ```{r scatter-multiplo, echo=FALSE}
 library(ggplot2)
 library(dplyr)
@@ -509,14 +634,23 @@ ggplot(plot_data, aes(x = x, y = Criminalità)) +
   geom_point(color = "steelblue", alpha = 0.7) +
   geom_smooth(method = "lm", color = "darkred", se = TRUE) +
   facet_wrap(~ Variabile, scales = "free_x") +
-  theme_minimal() +
-  labs(title = "Relazione tra Criminalità e Variabili Socioeconomiche",
-       x = "Valore della variabile indipendente",
-       y = "Totale Criminalità")
+  scale_x_continuous(labels = scales::label_comma(big.mark = ".", decimal.mark = ",")) +
+  theme_minimal(base_size = 10) +
+  labs(
+    title = "Figure 2 - Relazione tra Criminalità e Variabili Socioeconomiche",
+    x = "Valore della variabile indipendente",
+    y = "Totale Criminalità"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 11, hjust = 0.5),
+    axis.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 
 ```
 
 I risultati ottenuti evidenziano che nessuna delle variabili socioeconomiche considerate è, da sola, un predittore forte del livello di criminalità in Italia nel periodo osservato. I modelli di regressione lineare semplice mostrano relazioni deboli e non significative, e anche le correlazioni confermano l’assenza di legami forti tra le singole variabili e il fenomeno criminale. Queste evidenze suggeriscono che la criminalità è un fenomeno complesso e multifattoriale, probabilmente influenzato da interazioni tra variabili economiche, demografiche, culturali e istituzionali. L’adozione di modelli multivariati o approcci di tipo strutturale potrebbe offrire una maggiore capacità esplicativa. Inoltre, l’utilizzo di dati più granulari, ad esempio a livello regionale o comunale, potrebbe permettere di cogliere dinamiche locali oggi non osservabili nella scala nazionale.
+
 
 ```{r dati-esplorativo-crimes, include=FALSE}
 #crimes
@@ -767,75 +901,13 @@ ggplot(income_cleaned, aes(y = obsValue)) +
 
 ```
 
-```{r corr-crime-edu, include=FALSE}
-#correlazione crimes e education level(15-64) 2010-2020
+# Conclusioni
+
+L’analisi condotta ha esplorato il legame tra criminalità e alcune variabili socioeconomiche – istruzione, disoccupazione e reddito disponibile – nel contesto italiano tra il 2010 e il 2023. Sebbene le ipotesi teoriche suggeriscano una relazione significativa tra questi fattori e i fenomeni criminali, i risultati ottenuti mostrano effetti deboli e non statisticamente significativi nei modelli lineari stimati. Questo conferma la natura multifattoriale della criminalità, difficilmente spiegabile tramite singole variabili.
+
+I limiti principali dell’analisi risiedono nella scala aggregata dei dati e nella semplicità dei modelli impiegati. Future analisi potranno beneficiare di modelli multivariati più complessi, dell’utilizzo di dati disaggregati a livello territoriale, come indicato da @glaeser1999crime, e dell’inclusione di fattori istituzionali, culturali e opportunità economiche, come suggerito da @buonanno2012crime.
+
+In definitiva, questa analisi rappresenta un primo passo verso una comprensione più ampia del fenomeno, aprendo la strada a future ricerche che possano approfondire le molteplici dimensioni della criminalità in Italia.
 
 
-merged_data <- merge(crimes_cleaned1020, education_cleaned, by = "obsTime")
-
-#salva il file.csv
-write.csv(merged_data, "merged_data.csv", row.names = FALSE)
-
-
-cor_crime_edu <- cor(merged_data$obsValue.x, merged_data$obsValue.y, use = "complete.obs")
-
-# Stampare il risultato
-print(paste("Correlation between Crime and Education:", round(cor_crime_edu, 3)))
-
-
-```
-
-```{r regressione-crimes-edu, include=FALSE}
-# Creare il modello di regressione
-modello_regressione <- lm(obsValue.x ~ obsValue.y, data = merged_data)
-
-# Mostrare il riepilogo del modello
-summary(modello_regressione)
-
-```
-
-```{r corr-crimes-unemployment, include=FALSE}
-# Calcolare la correlazione tra il tasso di disoccupazione e la criminalità
-cor_crime_unemployment <- cor(crimes_cleaned1020$obsValue, 
-                              unemployment_cleaned$obsValue, 
-                              use = "complete.obs")
-
-# Stampare il risultato
-print(paste("Correlation between Crime and Unemployment:", round(cor_crime_unemployment, 3)))
-
-```
-
-```{r regressione-crimes-unemployment, include=FALSE}
-# Creare il modello di regressione tra crimes e unemployment
-reg_model_unemployment <- lm(crimes_cleaned1020$obsValue ~ unemployment_cleaned$obsValue)
-
-# Mostrare il riepilogo del modello
-summary(reg_model_unemployment)
-
-```
-
-```{r correlazione-crimes-income, include=FALSE}
-# Calcolare la correlazione con i dati filtrati
-cor_crime_income <- cor(crimes_cleaned1017$obsValue, 
-                        income_cleaned$obsValue, 
-                        use = "complete.obs")
-
-# Stampare il risultato
-print(paste("Correlation between Crime and Income:", round(cor_crime_income, 3)))
-
-```
-
-```{r regressione-crimes-income, include=FALSE}
-# Creare il modello di regressione
-reg_model_income <- lm(crimes_cleaned1017$obsValue ~ income_cleaned$obsValue)
-
-# Mostrare il riepilogo del modello
-summary(reg_model_income)
-
-```
-
-# Conclusions
-
-L’analisi condotta ha esplorato il legame tra criminalità e alcune variabili socioeconomiche – istruzione, disoccupazione e reddito disponibile – nel contesto italiano tra il 2010 e il 2023. Sebbene le ipotesi teoriche suggeriscano una relazione significativa tra questi fattori e i fenomeni criminali, i risultati ottenuti mostrano effetti deboli e non statisticamente significativi nei modelli lineari stimati. Questo conferma la natura multifattoriale della criminalità, difficilmente spiegabile tramite singole variabili. I limiti principali dell’analisi risiedono nella scala aggregata dei dati e nella semplicità dei modelli impiegati. Future analisi potranno beneficiare di modelli multivariati più complessi, dell’utilizzo di dati disaggregati a livello territoriale \cite{glaeser1999crime}, e dell’inclusione di fattori istituzionali, culturali e opportunità economiche, come suggerito dalla letteratura recente sulla criminalità economica in Italia \cite{buonanno2012crime}.
-
-# References
+# Referenze
